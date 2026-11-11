@@ -39,6 +39,21 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') speechPlayer.onVisible()
 })
 
+/* Mobile browsers only accept speech that starts inside a user gesture, and
+ * some of them stay silent until the speech engine has been primed. Do that
+ * on the very first touch so narration works on phones. */
+if ('speechSynthesis' in window) {
+  const prime = () => {
+    speechPlayer.unlock()
+    window.removeEventListener('pointerdown', prime, true)
+    window.removeEventListener('touchend', prime, true)
+    window.removeEventListener('keydown', prime, true)
+  }
+  window.addEventListener('pointerdown', prime, true)
+  window.addEventListener('touchend', prime, true)
+  window.addEventListener('keydown', prime, true)
+}
+
 const root = createRoot(document.getElementById('root')!)
 root.render(
   <ErrorBoundary>

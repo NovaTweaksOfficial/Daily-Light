@@ -1,12 +1,15 @@
 import { createContext, useContext, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { speechPlayer } from '@/lib/tts'
-import type { PlayerPosition, PlayerStatus, VoiceInfo } from '@/lib/tts'
+import type { PlayerPosition, PlayerStatus, SpeechIssue, VoiceInfo } from '@/lib/tts'
 
 interface PlayerCtx {
   supported: boolean
   status: PlayerStatus
   position: PlayerPosition | null
   voices: VoiceInfo[]
+  issue: SpeechIssue | null
+  clearIssue: () => void
+  testVoice: () => boolean
   start: (pos: PlayerPosition, opts?: { single?: boolean }) => void
   pause: () => void
   resume: () => void
@@ -21,6 +24,7 @@ const Ctx = createContext<PlayerCtx | null>(null)
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const status = useSyncExternalStore(speechPlayer.subscribe, () => speechPlayer.status)
   const position = useSyncExternalStore(speechPlayer.subscribe, () => speechPlayer.position)
+  const issue = useSyncExternalStore(speechPlayer.subscribe, () => speechPlayer.issue)
   const [voices, setVoices] = useState(speechPlayer.voices())
 
   useEffect(() => {
@@ -53,6 +57,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       status,
       position,
       voices,
+      issue,
+      clearIssue: () => speechPlayer.clearIssue(),
+      testVoice: () => speechPlayer.test(),
       start: (pos, opts) => void speechPlayer.start(pos, opts),
       pause: () => speechPlayer.pause(),
       resume: () => speechPlayer.resume(),
@@ -61,7 +68,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       prev: () => speechPlayer.prev(),
       jumpTo: (verse) => speechPlayer.jumpTo(verse),
     }),
-    [status, position, voices],
+    [status, position, voices, issue],
   )
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>

@@ -21,6 +21,29 @@ export interface PlayerPosition {
   verse: number
 }
 
+/** A narration problem worth showing to the user (never fail silently). */
+export interface SpeechIssue {
+  code: string
+  message: string
+}
+
+/** Human wording for the error codes the Web Speech API reports. */
+const SPEECH_ERRORS: Record<string, string> = {
+  'not-allowed':
+    'Your browser blocked audio playback. Tap play once more, and check that sound is allowed for this site.',
+  'synthesis-failed': 'No speech voice is installed on this device.',
+  'synthesis-unavailable': 'No speech engine is available on this device.',
+  'audio-busy': 'Another app was using the audio output.',
+  'audio-hardware': 'The audio output could not be opened.',
+  'language-unavailable': 'That voice does not support this language.',
+  'voice-unavailable': 'That voice is not installed on this device.',
+  network: 'That voice needs a network connection and could not be reached.',
+  'speak-failed': 'This browser refused to play the narration.',
+  'no-audio':
+    'Narration started but no sound came out. Turn up your media volume, then tap play again.',
+  'load-failed': 'The passage could not be downloaded. Check your connection and try again.',
+}
+
 type Listener = () => void
 
 export interface VoiceInfo {
@@ -37,6 +60,8 @@ class SpeechPlayer {
   rate = 1
   voiceURI: string | null = null
   autoChapter = true
+  /** The last narration problem, so failures are visible instead of silent. */
+  issue: SpeechIssue | null = null
 
   /** Play a single verse (used by the Daily verse listen button). */
   private single = false
@@ -47,6 +72,11 @@ class SpeechPlayer {
   private speakHeader = false
   private wakeLock: WakeLockSentinel | null = null
   private listeners = new Set<Listener>()
+  /** True once the speech engine has been primed inside a user gesture. */
+  private unlocked = false
+  /** Timestamp of the last cancel() — WebKit drops an utterance spoken too soon after. */
+  private canceledAt = 0
+  private watchdog: number | null = null
 
   constructor() {
     this.supported = typeof window !== 'undefined' && 'speechSynthesis' in window
@@ -97,18 +127,181 @@ class SpeechPlayer {
 
   /* Transport -------------------------------------------------------------- */
 
+  /**
+   * iOS/WebKit quirk: the speech engine ignores speak() calls that happen
+   * outside a user gesture, and some mobile browsers stay silent until the
+   * engine has been primed. Speaking a silent utterance during the first
+   * touch makes every later narration work.
+   */
+  unlock() {
+    if (this.unlocked || !this.supported) return
+    try {
+      const u = new SpeechSynthesisUtterance(' ')
+      u.volume = 0
+      u.rate = 2
+      u.onerror = () => undefined
+      window.speechSynthesis.speak(u)
+      this.unlocked = true
+    } catch {
+      /* ignore — some engines refuse an empty utterance */
+    }
+  }
+
+  /** Clears a reported problem (called when the user starts again). */
+  clearIssue() {
+    if (!this.issue) return
+    this.issue = null
+    this.emit()
+  }
+
+  /** Builds an utterance configured for the current settings. */
+  private makeUtterance(text: string): SpeechSynthesisUtterance {
+    const u = new SpeechSynthesisUtterance(text)
+    u.rate = this.rate
+    const voice = this.pickVoice()
+    if (voice) {
+      u.voice = voice
+      u.lang = voice.lang
+    } else {
+      // Mobile engines need an explicit language to pick a voice.
+      u.lang = 'en-US'
+    }
+    return u
+  }
+
+  /**
+   * Speaks an utterance in a way that survives mobile quirks:
+   *  - resumes the engine if it was left paused,
+   *  - waits a moment after a cancel (WebKit drops utterances spoken in the
+   *    same tick as cancel()),
+   *  - reports failures instead of failing silently.
+   */
+  private speakUtterance(
+    u: SpeechSynthesisUtterance,
+    onEnd: () => void,
+    onFail: (code: string) => void,
+    onStart?: () => void,
+  ) {
+    const synth = window.speechSynthesis
+    const token = ++this.cancelToken
+
+    const go = () => {
+      if (token !== this.cancelToken) return
+      if (synth.paused) {
+        try {
+          synth.resume()
+        } catch {
+          /* ignore */
+        }
+      }
+      try {
+        synth.speak(u)
+      } catch {
+        onFail('speak-failed')
+      }
+    }
+
+    u.onstart = () => {
+      this.clearWatchdog()
+      onStart?.()
+    }
+    u.onend = () => {
+      if (token === this.cancelToken) onEnd()
+    }
+    u.onerror = (e) => {
+      const code = (e as SpeechSynthesisErrorEvent).error || 'unknown'
+      if (code === 'interrupted' || code === 'canceled') return
+      if (token !== this.cancelToken) return
+      onFail(code)
+    }
+
+    const sinceCancel = Date.now() - this.canceledAt
+    if (sinceCancel < 140) {
+      window.setTimeout(go, 140 - sinceCancel)
+    } else {
+      go()
+    }
+  }
+
+  /**
+   * Speaks a short sample so Settings can confirm the device actually has a
+   * working voice. Returns false when the browser has no speech engine.
+   */
+  test(): boolean {
+    if (!this.supported) return false
+    this.unlock()
+    this.clearIssue()
+    const u = this.makeUtterance('Testing one, two, three. This is Daily Light.')
+    this.speakUtterance(
+      u,
+      () => this.emit(),
+      (code) => this.fail(code),
+      () => this.emit(),
+    )
+    this.startWatchdog()
+    this.emit()
+    return true
+  }
+
+  /** Fails the narration with a message the user can act on. */
+  private fail(code: string) {
+    this.clearWatchdog()
+    this.status = 'idle'
+    this.releaseWake()
+    this.issue = {
+      code,
+      message: SPEECH_ERRORS[code] ?? 'Narration stopped unexpectedly. Tap play to try again.',
+    }
+    this.emit()
+  }
+
+  /** Warns if narration "started" but never produced any sound. */
+  private startWatchdog() {
+    this.clearWatchdog()
+    this.watchdog = window.setTimeout(() => {
+      const synth = window.speechSynthesis
+      if (this.status === 'playing' && !synth.speaking && !synth.pending) {
+        this.issue = { code: 'no-audio', message: SPEECH_ERRORS['no-audio'] }
+        this.emit()
+      }
+    }, 3000)
+  }
+
+  private clearWatchdog() {
+    if (this.watchdog !== null) {
+      window.clearTimeout(this.watchdog)
+      this.watchdog = null
+    }
+  }
+
   /** Start reading at a position. opts.single stops after that one verse. */
-  async start(pos: PlayerPosition, opts?: { single?: boolean; header?: boolean }) {
+  start(pos: PlayerPosition, opts?: { single?: boolean; header?: boolean }) {
     if (!this.supported) return
+    // Prime the engine inside the tap that started this.
+    this.unlock()
+    this.clearIssue()
     this.single = !!opts?.single
     this.speakHeader = opts?.header !== false && !this.single
-    const book = await loadBook(pos.book)
-    this.chapter = book
-    this.position = { ...pos }
     this.softPaused = false
+    this.position = { ...pos }
     this.status = 'playing'
     this.requestWake()
-    this.speakCurrent()
+    this.emit()
+
+    // If the chapter is already in memory, speak immediately — mobile browsers
+    // only accept speech that starts inside the user's tap.
+    if (this.chapter && this.chapter.id === pos.book) {
+      this.speakCurrent()
+      return
+    }
+
+    loadBook(pos.book)
+      .then((book) => {
+        if (this.status !== 'playing' || !this.position) return
+        this.chapter = book
+        this.speakCurrent()
+      })
+      .catch(() => this.fail('load-failed'))
   }
 
   pause() {
@@ -121,6 +314,7 @@ class SpeechPlayer {
     window.setTimeout(() => {
       if (this.status === 'paused' && synth.speaking && !synth.paused) {
         this.cancelToken++
+        this.canceledAt = Date.now()
         synth.cancel()
         this.softPaused = true
       }
@@ -144,6 +338,8 @@ class SpeechPlayer {
   stop() {
     if (!this.supported) return
     this.cancelToken++
+    this.canceledAt = Date.now()
+    this.clearWatchdog()
     window.speechSynthesis.cancel()
     this.releaseWake()
     this.status = 'idle'
@@ -156,6 +352,7 @@ class SpeechPlayer {
   jumpTo(verse: number) {
     if (!this.supported || !this.position) return
     this.cancelToken++
+    this.canceledAt = Date.now()
     window.speechSynthesis.cancel()
     this.position.verse = verse
     this.softPaused = false
@@ -212,37 +409,25 @@ class SpeechPlayer {
 
   private speakCurrent() {
     if (!this.supported || !this.position) return
-    const token = ++this.cancelToken
-    const synth = window.speechSynthesis
 
     const speakVerseNow = () => {
-      if (token !== this.cancelToken) return
-      const text = this.speechText(this.position!.verse)
+      const pos = this.position
+      if (!pos) return
+      const text = this.speechText(pos.verse)
       if (!text || !text.trim()) {
         // Textual-note-only verse — skip forward.
         this.advance()
         return
       }
-      const u = new SpeechSynthesisUtterance(text)
-      u.rate = this.rate
-      const voice = this.pickVoice()
-      if (voice) {
-        u.voice = voice
-        u.lang = voice.lang
-      }
-      u.onend = () => {
-        if (token === this.cancelToken && this.status === 'playing') this.advance()
-      }
-      u.onerror = (e) => {
-        if (token !== this.cancelToken) return
-        if (e.error === 'interrupted' || e.error === 'canceled') return
-        // Unexpected failure — stop cleanly.
-        this.status = 'idle'
-        this.releaseWake()
-        this.emit()
-      }
-      synth.cancel()
-      synth.speak(u)
+      const u = this.makeUtterance(text)
+      this.speakUtterance(
+        u,
+        () => {
+          if (this.status === 'playing') this.advance()
+        },
+        (code) => this.fail(code),
+      )
+      this.startWatchdog()
       this.emit()
     }
 
@@ -250,19 +435,13 @@ class SpeechPlayer {
       this.speakHeader = false
       const header = this.headerText()
       if (header) {
-        const hu = new SpeechSynthesisUtterance(header)
-        hu.rate = this.rate
-        const voice = this.pickVoice()
-        if (voice) {
-          hu.voice = voice
-          hu.lang = voice.lang
-        }
-        hu.onend = () => {
-          if (token === this.cancelToken && this.status === 'playing') speakVerseNow()
-        }
-        hu.onerror = () => speakVerseNow()
-        synth.cancel()
-        synth.speak(hu)
+        const hu = this.makeUtterance(header)
+        this.speakUtterance(
+          hu,
+          () => speakVerseNow(),
+          () => speakVerseNow(),
+        )
+        this.startWatchdog()
         this.emit()
         return
       }
@@ -342,7 +521,18 @@ class SpeechPlayer {
 
   /** Re-acquire the wake lock when returning to the page mid-playback. */
   onVisible() {
-    if (this.status === 'playing') this.requestWake()
+    if (this.status !== 'playing') return
+    // Mobile browsers often leave the engine paused after the app was in the
+    // background — nudge it awake so the reading continues.
+    const synth = window.speechSynthesis
+    if (synth.paused) {
+      try {
+        synth.resume()
+      } catch {
+        /* ignore */
+      }
+    }
+    this.requestWake()
   }
 }
 

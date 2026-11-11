@@ -22,6 +22,7 @@ import { dbGetAll, dbWipeAll, idbAvailable } from '@/lib/storage'
 import { loadIndex, totalChapterCount } from '@/lib/bible'
 import type { AccentColor, BibleIndex, ThemeMode } from '@/types'
 import { PageHeader, Toggle, Segmented, Button, Sheet } from '@/components/ui'
+import { SpeechIssueBanner } from '@/components/SpeechIssue'
 
 const ACCENTS: { id: AccentColor; label: string; swatch: string }[] = [
   { id: 'gold', label: 'Gold', swatch: '#c99a2e' },
@@ -244,6 +245,25 @@ export default function SettingsView() {
                 ))}
               </select>
             </div>
+            <div className="settings-row">
+              <div className="settings-copy">
+                <strong>Test the voice</strong>
+                <span>
+                  {player.voices.length} voice{player.voices.length === 1 ? '' : 's'} available on
+                  this device.
+                </span>
+              </div>
+              <Button
+                variant="soft"
+                onClick={() => {
+                  const ok = player.testVoice()
+                  if (!ok) toast('This browser has no speech engine')
+                }}
+              >
+                <Volume2 size={15} /> Play a sample
+              </Button>
+            </div>
+            <SpeechIssueBanner />
             <div className="settings-row">
               <div className="settings-copy">
                 <strong>Continue into next chapter</strong>

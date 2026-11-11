@@ -1800,6 +1800,61 @@ html.has-player .main {
   line-height: 1.55;
 }
 
+.listen-issue {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  background: #b3402f14;
+  border: 1px solid #b3402f55;
+  color: var(--text);
+}
+
+[data-theme='dark'] .listen-issue {
+  background: #a33d2d1f;
+  border-color: #a33d2d66;
+}
+
+.listen-issue > svg {
+  color: #b3402f;
+  flex: none;
+  margin-top: 2px;
+}
+
+.listen-issue-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.listen-issue-copy strong {
+  font-size: 0.84rem;
+}
+
+.listen-issue-copy span {
+  font-size: 0.78rem;
+  color: var(--text-2);
+  line-height: 1.45;
+}
+
+.listen-issue-close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  color: var(--text-3);
+}
+
+.listen-issue-close:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
 .unsupported-card {
   display: flex;
   flex-direction: column;

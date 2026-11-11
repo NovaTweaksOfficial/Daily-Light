@@ -126,6 +126,20 @@ audio file to download and no server involved.
 - A **wake lock** keeps the screen awake while narrating where the browser supports it.
 - Voices come from your device, so quality and language depend on your OS.
 
+**Mobile specifics (these matter more than they look):**
+
+- iOS and Android only accept speech that *starts inside your tap*. The app therefore primes
+  the speech engine on the first touch of the screen and starts speaking within the tap that
+  you pressed — it never waits on a network request before the first word.
+- WebKit drops an utterance that is spoken in the same tick as a `cancel()`, so the app waits a
+  moment before interrupting or jumping.
+- If the engine is left paused (a common state after the app was backgrounded), the app resumes
+  it when you come back.
+- **Settings → Audio → Play a sample** speaks a short phrase so you can confirm your device has
+  a working voice. The number of installed voices is shown next to it.
+- If narration fails, the app **says so** with the browser's actual error (blocked audio, no
+  voice installed, audio output busy, and so on) instead of failing silently.
+
 **Platform limits (handled honestly in the UI):**
 
 - If the browser has no speech engine, the Listen tab explains what is missing and everything
@@ -134,6 +148,8 @@ audio file to download and no server involved.
   cancel-and-resume-from-the-current-verse.
 - iOS Safari stops speech when the app is backgrounded — return to the app and it resumes.
 - Voice availability depends on the operating system, not on this app.
+- On a phone, keep your media volume up and the screen awake; narration plays through the
+  device's normal audio output.
 
 ---
 

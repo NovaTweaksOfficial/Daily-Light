@@ -9,6 +9,7 @@ import { useLibrary } from '@/state/library'
 import type { BibleIndex, BookData } from '@/types'
 import { VerseRow } from '@/components/VerseRow'
 import { PageHeader, Segmented, Toggle } from '@/components/ui'
+import { SpeechIssueBanner } from '@/components/SpeechIssue'
 
 const RATES = [0.75, 1, 1.25, 1.5, 2].map((r) => ({ value: r, label: `${r}×` }))
 
@@ -37,6 +38,13 @@ export default function ListenView() {
       alive = false
     }
   }, [])
+
+  /* Pre-load the "continue reading" book so the first tap can start speaking
+   * inside the gesture — mobile browsers refuse speech that starts later. */
+  useEffect(() => {
+    if (!lastRead) return
+    loadBook(lastRead.book).catch(() => undefined)
+  }, [lastRead?.book])
 
   /* Load the book being narrated. */
   useEffect(() => {
@@ -95,6 +103,7 @@ export default function ListenView() {
     return (
       <div className="view listen-view">
         <PageHeader title="Listen" subtitle="Bible narration with follow-along text" />
+        <SpeechIssueBanner />
         <div className="listen-picks">
           <button
             className="listen-pick card"
@@ -146,6 +155,10 @@ export default function ListenView() {
           Tip: tap any verse while reading to start narration from that point. Narration keeps
           going into the next chapter automatically.
         </p>
+        <p className="listen-tip">
+          On a phone, keep the screen awake and your media volume up — narration plays through
+          the device&rsquo;s normal audio output.
+        </p>
       </div>
     )
   }
@@ -155,6 +168,8 @@ export default function ListenView() {
   return (
     <div className="view listen-view">
       <PageHeader title="Listen" subtitle={label} />
+
+      <SpeechIssueBanner />
 
       {/* Transport */}
       <div className="transport card">
