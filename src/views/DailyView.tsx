@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Bookmark, BookmarkCheck, Headphones, Share2, Sunrise, ChevronRight, Play, Pause } from 'lucide-react'
 import { loadBook, loadIndex } from '@/lib/bible'
+import { isIOSDevice } from '@/lib/diagnostics'
 import {
   dailyRef,
   dailyVerseForDate,
@@ -176,6 +177,16 @@ export default function DailyView() {
         </div>
       </section>
 
+      {isIOSDevice() && (
+        <div className="ios-silent-hint" role="note">
+          <span className="ios-silent-hint-icon" aria-hidden>🔇</span>
+          <div>
+            <strong>iPhone tip:</strong> if you hear nothing, your phone may be in Silent mode.
+            Check the Silent switch on the side of your phone (or the bell icon in Control Centre)
+            and try again.
+          </div>
+        </div>
+      )}
       <p className="daily-note">
         A new verse arrives every day at midnight, chosen from a curated devotional rotation.
       </p>

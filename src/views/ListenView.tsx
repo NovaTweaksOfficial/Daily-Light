@@ -161,11 +161,14 @@ export default function ListenView() {
           the device&rsquo;s normal audio output.
         </p>
         {isIOSDevice() && (
-          <p className="listen-tip listen-tip-ios">
-            On iPhone and iPad, <strong>Silent mode mutes apps</strong>. If nothing comes out, check
-            the Silent switch on the side of your phone (or the bell icon in Control Centre) and
-            try again.
-          </p>
+          <div className="ios-silent-hint" role="note">
+            <span className="ios-silent-hint-icon" aria-hidden>🔇</span>
+            <div>
+              <strong>iPhone tip:</strong> if you hear nothing, your phone may be in Silent mode.
+              Check the Silent switch on the side of your phone (or the bell icon in Control
+              Centre) and try again.
+            </div>
+          </div>
         )}
       </div>
     )
