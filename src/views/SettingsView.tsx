@@ -12,6 +12,7 @@ import {
   Download,
   Volume2,
   Flame,
+  ClipboardCopy,
 } from 'lucide-react'
 import { useSettings } from '@/state/settings'
 import { useLibrary } from '@/state/library'
@@ -19,6 +20,7 @@ import { usePlayer } from '@/state/player'
 import { useToast } from '@/state/toast'
 import { permissionState, requestPermission, showNotification, notificationsSupported } from '@/lib/notify'
 import { dbGetAll, dbWipeAll, idbAvailable } from '@/lib/storage'
+import { collectDiagnostics, diagnosticsReport, type VoiceDiagnostics } from '@/lib/diagnostics'
 import { loadIndex, totalChapterCount } from '@/lib/bible'
 import type { AccentColor, BibleIndex, ThemeMode } from '@/types'
 import { PageHeader, Toggle, Segmented, Button, Sheet } from '@/components/ui'
@@ -40,12 +42,27 @@ export default function SettingsView() {
   const [idb, setIdb] = useState<boolean | null>(null)
   const [wipeOpen, setWipeOpen] = useState(false)
   const [index, setIndex] = useState<BibleIndex | null>(null)
+  const [diag, setDiag] = useState<VoiceDiagnostics | null>(null)
 
   useEffect(() => {
     setPerm(permissionState())
     idbAvailable().then(setIdb)
     loadIndex().then(setIndex)
+    setDiag(collectDiagnostics())
   }, [])
+
+  /** Refreshes the diagnostics (voices load asynchronously on some devices). */
+  const refreshDiag = () => setDiag(collectDiagnostics())
+
+  const copyDiagnostics = async () => {
+    const report = diagnosticsReport(collectDiagnostics())
+    try {
+      await navigator.clipboard.writeText(report)
+      toast('Report copied — paste it to FL3SH')
+    } catch {
+      toast('Could not copy the report')
+    }
+  }
 
   const percentBible = useMemo(() => {
     const total = index ? totalChapterCount(index) : 1189
@@ -211,7 +228,9 @@ export default function SettingsView() {
         </h3>
         {!player.supported ? (
           <p className="muted-note">
-            Speech narration is not supported by this browser. Try Safari, Chrome, or Edge.
+            This browser reports no speech engine. Safari, Chrome and Edge all support narration —
+            and if you opened this page inside another app (a chat app, for example), open it in
+            your own browser instead.
           </p>
         ) : (
           <>
@@ -258,12 +277,12 @@ export default function SettingsView() {
                 onClick={() => {
                   const ok = player.testVoice()
                   if (!ok) toast('This browser has no speech engine')
+                  window.setTimeout(refreshDiag, 900)
                 }}
               >
                 <Volume2 size={15} /> Play a sample
               </Button>
             </div>
-            <SpeechIssueBanner />
             <div className="settings-row">
               <div className="settings-copy">
                 <strong>Continue into next chapter</strong>
@@ -288,6 +307,45 @@ export default function SettingsView() {
             </div>
           </>
         )}
+
+        <SpeechIssueBanner />
+
+        {/* Device diagnostics - tells us exactly why a phone stays silent. */}
+        <details className="diag-box">
+          <summary onClick={refreshDiag}>Narration diagnostics</summary>
+          <dl className="diag-list">
+            <div>
+              <dt>Device</dt>
+              <dd>{diag?.platform ?? '-'}</dd>
+            </div>
+            <div>
+              <dt>Speech engine</dt>
+              <dd>{diag ? (diag.supported ? 'available' : 'not available') : '-'}</dd>
+            </div>
+            <div>
+              <dt>Voices</dt>
+              <dd>{diag ? `${diag.voiceCount} (${diag.englishVoices} English)` : '-'}</dd>
+            </div>
+            <div>
+              <dt>Device language</dt>
+              <dd>{diag?.deviceLanguage ?? '-'}</dd>
+            </div>
+            <div>
+              <dt>Running as</dt>
+              <dd>{diag ? (diag.standalone ? 'installed app' : 'browser tab') : '-'}</dd>
+            </div>
+            <div>
+              <dt>Last error</dt>
+              <dd>{diag?.lastError ?? 'none'}</dd>
+            </div>
+          </dl>
+          {diag && diag.sampleVoices.length > 0 && (
+            <p className="diag-voices">{diag.sampleVoices.join(' - ')}</p>
+          )}
+          <Button variant="ghost" onClick={() => void copyDiagnostics()}>
+            <ClipboardCopy size={15} /> Copy report
+          </Button>
+        </details>
       </section>
 
       {/* Notifications --------------------------------------------------------- */}

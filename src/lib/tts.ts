@@ -116,13 +116,34 @@ class SpeechPlayer {
     }, { once: true })
   }
 
+  /**
+   * Chooses the voice to speak with:
+   *   1. the one the user picked,
+   *   2. a voice for the device's own language,
+   *   3. any English voice,
+   *   4. anything the engine offers.
+   * Forcing a locale the device does not have makes iOS fail outright, so we
+   * never hard-code a language here.
+   */
   private pickVoice(): SpeechSynthesisVoice | null {
     const all = window.speechSynthesis.getVoices()
     if (this.voiceURI) {
-      const v = all.find((x) => x.voiceURI === this.voiceURI)
-      if (v) return v
+      const chosen = all.find((x) => x.voiceURI === this.voiceURI)
+      if (chosen) return chosen
     }
-    return null
+    if (!all.length) return null
+
+    const device = (navigator.language || '').toLowerCase()
+    const exact = all.find((v) => v.lang.toLowerCase() === device)
+    if (exact) return exact
+
+    const sameBase = all.find((v) => v.lang.toLowerCase().split('-')[0] === device.split('-')[0])
+    if (sameBase) return sameBase
+
+    const english = all.find((v) => v.lang.toLowerCase().startsWith('en'))
+    if (english) return english
+
+    return all[0] ?? null
   }
 
   /* Transport -------------------------------------------------------------- */
@@ -162,10 +183,9 @@ class SpeechPlayer {
     if (voice) {
       u.voice = voice
       u.lang = voice.lang
-    } else {
-      // Mobile engines need an explicit language to pick a voice.
-      u.lang = 'en-US'
     }
+    // When no voice is available we leave lang/voice untouched: forcing a
+    // locale the device does not have makes some engines fail silently.
     return u
   }
 

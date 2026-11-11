@@ -1855,6 +1855,70 @@ html.has-player .main {
   color: var(--text);
 }
 
+.diag-box {
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  padding: 10px 12px;
+}
+
+.diag-box summary {
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  list-style: none;
+}
+
+.diag-box summary::-webkit-details-marker {
+  display: none;
+}
+
+.diag-box summary::after {
+  content: ' ▾';
+}
+
+.diag-box[open] summary::after {
+  content: ' ▴';
+}
+
+.diag-list {
+  margin: 10px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.diag-list > div {
+  display: flex;
+  gap: 10px;
+  font-size: 0.76rem;
+}
+
+.diag-list dt {
+  flex: none;
+  width: 108px;
+  color: var(--text-3);
+}
+
+.diag-list dd {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.diag-voices {
+  margin: 8px 0 0;
+  font-size: 0.72rem;
+  color: var(--text-3);
+  line-height: 1.5;
+  word-break: break-word;
+}
+
 .unsupported-card {
   display: flex;
   flex-direction: column;

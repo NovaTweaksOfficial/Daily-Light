@@ -137,8 +137,15 @@ audio file to download and no server involved.
   it when you come back.
 - **Settings → Audio → Play a sample** speaks a short phrase so you can confirm your device has
   a working voice. The number of installed voices is shown next to it.
+- **Settings → Audio → Narration diagnostics** reports the device, the speech engine, the
+  installed voices, the device language, whether the app is running as an installed app, and
+  the last error. "Copy report" puts all of it on the clipboard so it can be sent along with a
+  bug report — this is the fastest way to diagnose a phone that stays silent.
 - If narration fails, the app **says so** with the browser's actual error (blocked audio, no
   voice installed, audio output busy, and so on) instead of failing silently.
+- If the page was opened **inside another app** (a chat app, a social app), that in-app browser
+  often has a speech engine that never makes a sound. Open the address in Safari or Chrome, or
+  add the app to your home screen, and narration works.
 
 **Platform limits (handled honestly in the UI):**
 
