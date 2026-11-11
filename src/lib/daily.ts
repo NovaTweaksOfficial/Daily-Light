@@ -163,6 +163,12 @@ export function dailyVerseForDate(date = new Date()): DailyVerse {
   return dailyVerseForDay(dayNumber(date))
 }
 
+/** Index into DAILY_VERSES for a date — used to find the matching audio file. */
+export function dailyVerseIndex(date = new Date()): number {
+  const idx = ((dayNumber(date) % ORDER.length) + ORDER.length) % ORDER.length
+  return ORDER[idx]
+}
+
 export function dailyVerseForDateKey(key: string): DailyVerse | null {
   const d = dateFromKey(key)
   return d ? dailyVerseForDay(dayNumber(d)) : null
