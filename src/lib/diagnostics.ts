@@ -11,6 +11,8 @@ import { speechPlayer } from '@/lib/tts'
 export interface VoiceDiagnostics {
   /** Does this browser expose a speech engine at all? */
   supported: boolean
+  /** True on iPhone/iPad — where Silent mode mutes app audio. */
+  isIOS: boolean
   /** How many voices the device reports. */
   voiceCount: number
   /** How many of those can speak English. */
@@ -41,6 +43,14 @@ function isStandalone(): boolean {
   }
 }
 
+/** iPhone, iPad and iPod — where Silent mode mutes app audio. */
+export function isIOSDevice(): boolean {
+  const ua = navigator.userAgent
+  if (/iPad|iPhone|iPod/.test(ua)) return true
+  // iPadOS reports as a Mac, but exposes touch points.
+  return /Macintosh/.test(ua) && typeof navigator.maxTouchPoints === 'number' && navigator.maxTouchPoints > 1
+}
+
 function describePlatform(): string {
   const ua = navigator.userAgent
   if (/iPhone|iPad|iPod/.test(ua)) return 'iOS (Safari/WebKit)'
@@ -58,6 +68,7 @@ export function collectDiagnostics(): VoiceDiagnostics {
   const issue = speechPlayer.issue
   return {
     supported,
+    isIOS: isIOSDevice(),
     voiceCount: voices.length,
     englishVoices: voices.filter((v) => v.lang.toLowerCase().startsWith('en')).length,
     sampleVoices: voices.slice(0, 5).map((v) => `${v.name} (${v.lang})`),

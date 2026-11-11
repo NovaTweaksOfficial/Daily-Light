@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "bible": "node scripts/fetch-bible.mjs",
-    "icons": "node scripts/gen-icons.mjs"
+    "icons": "node scripts/gen-icons.mjs",
+    "silence": "node scripts/gen-silence.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.460.0",

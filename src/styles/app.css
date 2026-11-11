@@ -1800,6 +1800,18 @@ html.has-player .main {
   line-height: 1.55;
 }
 
+.listen-tip-ios {
+  padding: 11px 13px;
+  border-radius: var(--r-md);
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  border: 1px solid var(--accent);
+}
+
+.listen-tip-ios strong {
+  font-weight: 700;
+}
+
 .listen-issue {
   display: flex;
   align-items: flex-start;

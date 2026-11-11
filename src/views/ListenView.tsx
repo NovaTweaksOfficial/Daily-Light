@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Headphones, Pause, Play, SkipBack, SkipForward, Square, BookOpen, Sunrise } from 'lucide-react'
 import { loadBook, loadIndex, refString } from '@/lib/bible'
+import { isIOSDevice } from '@/lib/diagnostics'
 import { dailyVerseForDate, dailyRef } from '@/lib/daily'
 import { usePlayer } from '@/state/player'
 import { useSettings } from '@/state/settings'
@@ -159,6 +160,13 @@ export default function ListenView() {
           On a phone, keep the screen awake and your media volume up — narration plays through
           the device&rsquo;s normal audio output.
         </p>
+        {isIOSDevice() && (
+          <p className="listen-tip listen-tip-ios">
+            On iPhone and iPad, <strong>Silent mode mutes apps</strong>. If nothing comes out, check
+            the Silent switch on the side of your phone (or the bell icon in Control Centre) and
+            try again.
+          </p>
+        )}
       </div>
     )
   }

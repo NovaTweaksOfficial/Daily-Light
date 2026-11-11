@@ -42,6 +42,7 @@ npm run preview   # serve the production build locally
 npm test          # run the unit test suite (vitest)
 npm run bible     # re-download and re-convert the World English Bible (see below)
 npm run icons     # regenerate the PWA icons from source
+npm run silence   # regenerate public/silence.wav (see "How audio works")
 ```
 
 Requires Node 20 or newer.
@@ -131,6 +132,11 @@ audio file to download and no server involved.
 - iOS and Android only accept speech that *starts inside your tap*. The app therefore primes
   the speech engine on the first touch of the screen and starts speaking within the tap that
   you pressed — it never waits on a network request before the first word.
+- **iOS Silent mode mutes apps, including narration.** When Daily Light is added to the home
+  screen, iOS routes its audio through the ambient category, so a phone in Silent mode stays
+  completely silent. The app fixes this by playing a silent clip (`public/silence.wav`, 2 KB of
+  nothing) during your first tap, which switches iOS to the playback category so the voice is
+  heard. If it is still quiet, check the Silent switch on the side of the phone.
 - WebKit drops an utterance that is spoken in the same tick as a `cancel()`, so the app waits a
   moment before interrupting or jumping.
 - If the engine is left paused (a common state after the app was backgrounded), the app resumes

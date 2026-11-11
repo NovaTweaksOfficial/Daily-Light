@@ -74,6 +74,8 @@ class SpeechPlayer {
   private listeners = new Set<Listener>()
   /** True once the speech engine has been primed inside a user gesture. */
   private unlocked = false
+  /** True once the iOS audio session has been switched to playback. */
+  private sessionUnlocked = false
   /** Timestamp of the last cancel() — WebKit drops an utterance spoken too soon after. */
   private canceledAt = 0
   private watchdog: number | null = null
@@ -155,16 +157,55 @@ class SpeechPlayer {
    * touch makes every later narration work.
    */
   unlock() {
+    // Always try to switch the audio session — it is cheap and the first
+    // attempt can be refused before the page has a user gesture.
+    this.unlockAudioSession()
     if (this.unlocked || !this.supported) return
+    this.unlocked = true
     try {
       const u = new SpeechSynthesisUtterance(' ')
       u.volume = 0
       u.rate = 2
       u.onerror = () => undefined
       window.speechSynthesis.speak(u)
-      this.unlocked = true
     } catch {
       /* ignore — some engines refuse an empty utterance */
+    }
+  }
+
+  /**
+   * iOS quirk: a home-screen PWA plays speech through the ambient audio
+   * category, so the phone's Silent switch mutes narration completely.
+   * Playing a silent clip inside the tap switches iOS to the playback
+   * category, after which the voice is audible even in Silent mode.
+   */
+  private unlockAudioSession() {
+    if (this.sessionUnlocked) return
+    try {
+      const audio = new Audio(`${import.meta.env.BASE_URL}silence.wav`)
+      audio.preload = 'auto'
+      // `playsInline` keeps iOS from taking over the whole screen.
+      audio.setAttribute('playsinline', 'true')
+      const played = audio.play()
+      if (played && typeof played.then === 'function') {
+        played
+          .then(() => {
+            this.sessionUnlocked = true
+            window.setTimeout(() => {
+              audio.pause()
+              try {
+                audio.currentTime = 0
+              } catch {
+                /* ignore */
+              }
+            }, 120)
+          })
+          .catch(() => undefined) // refused — try again on the next tap
+      } else {
+        this.sessionUnlocked = true
+      }
+    } catch {
+      /* ignore — not every browser allows this */
     }
   }
 
