@@ -1,0 +1,159 @@
+/* Daily Light — design tokens.
+ * Light theme is warm paper; dark theme is deep, calm night.
+ * Accents: gold (default), indigo, rose, forest.
+ */
+
+:root {
+  /* Type */
+  --font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-serif: 'Literata', Georgia, 'Times New Roman', serif;
+  --verse-size: 1.185rem;
+
+  /* Shape */
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+
+  /* Layout */
+  --gutter: 20px;
+  --maxw: 720px;
+  --sidebar-w: 248px;
+
+  /* Motion */
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --t-fast: 150ms var(--ease);
+  --t-med: 280ms var(--ease);
+
+  color-scheme: light;
+}
+
+/* Light (warm paper) -------------------------------------------------------- */
+:root,
+[data-theme='light'] {
+  --bg: #f6f2e9;
+  --bg-soft: #efe9dc;
+  --surface: #fffdf7;
+  --surface-2: #f8f4ea;
+  --surface-3: #efe8d9;
+  --text: #2b2721;
+  --text-2: #6b6355;
+  --text-3: #948b7a;
+  --line: #e2d9c6;
+  --line-soft: #ebe3d2;
+
+  --wj: #b02a2a;
+  --shadow-1: 0 1px 2px rgb(76 66 44 / 0.05), 0 2px 10px rgb(76 66 44 / 0.05);
+  --shadow-2: 0 2px 6px rgb(76 66 44 / 0.06), 0 10px 32px rgb(76 66 44 / 0.1);
+  --shadow-pop: 0 8px 24px rgb(76 66 44 / 0.14), 0 24px 64px rgb(76 66 44 / 0.18);
+
+  --scrim: rgb(43 39 33 / 0.4);
+}
+
+/* Dark (calm night) --------------------------------------------------------- */
+[data-theme='dark'] {
+  --bg: #171512;
+  --bg-soft: #1e1c18;
+  --surface: #221f1b;
+  --surface-2: #28251f;
+  --surface-3: #322e26;
+  --text: #ece7dc;
+  --text-2: #b3ab9a;
+  --text-3: #7d7565;
+  --line: #383329;
+  --line-soft: #2e2a22;
+
+  --wj: #ff8d80;
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.3), 0 2px 10px rgb(0 0 0 / 0.25);
+  --shadow-2: 0 2px 6px rgb(0 0 0 / 0.35), 0 10px 32px rgb(0 0 0 / 0.35);
+  --shadow-pop: 0 8px 24px rgb(0 0 0 / 0.45), 0 24px 64px rgb(0 0 0 / 0.5);
+
+  --scrim: rgb(10 9 7 / 0.6);
+
+  color-scheme: dark;
+}
+
+/* Accent palettes ------------------------------------------------------------ */
+[data-accent='gold'] {
+  --accent: #b8860b;
+  --accent-strong: #9a6f08;
+  --accent-soft: #f3e3bb;
+  --accent-text: #7a5a05;
+  --accent-contrast: #fffdf7;
+  --ring: rgb(184 134 11 / 0.35);
+}
+[data-accent='indigo'] {
+  --accent: #5b5bd6;
+  --accent-strong: #4747b8;
+  --accent-soft: #dcddf6;
+  --accent-text: #3a3a99;
+  --accent-contrast: #ffffff;
+  --ring: rgb(91 91 214 / 0.35);
+}
+[data-accent='rose'] {
+  --accent: #c2507b;
+  --accent-strong: #a63a62;
+  --accent-soft: #f6dbe6;
+  --accent-text: #8f2f52;
+  --accent-contrast: #fffdf7;
+  --ring: rgb(194 80 123 / 0.35);
+}
+[data-accent='forest'] {
+  --accent: #3d7a4f;
+  --accent-strong: #2f6340;
+  --accent-soft: #d7e8da;
+  --accent-text: #2c5939;
+  --accent-contrast: #f6fbf4;
+  --ring: rgb(61 122 79 / 0.35);
+}
+
+[data-theme='dark'][data-accent='gold'] {
+  --accent: #d9a92e;
+  --accent-strong: #c9971f;
+  --accent-soft: #3a3117;
+  --accent-text: #ecd9a0;
+  --accent-contrast: #221c0c;
+}
+[data-theme='dark'][data-accent='indigo'] {
+  --accent: #8f8fef;
+  --accent-strong: #7575e2;
+  --accent-soft: #262a4a;
+  --accent-text: #c3c4f6;
+  --accent-contrast: #12123a;
+}
+[data-theme='dark'][data-accent='rose'] {
+  --accent: #e58bab;
+  --accent-strong: #d57293;
+  --accent-soft: #422630;
+  --accent-text: #f3c3d3;
+  --accent-contrast: #3a0f22;
+}
+[data-theme='dark'][data-accent='forest'] {
+  --accent: #6cae81;
+  --accent-strong: #589a6c;
+  --accent-soft: #1f3226;
+  --accent-text: #bcdcc6;
+  --accent-contrast: #0e2416;
+}
+
+/* Highlight colors (verse highlights) ---------------------------------------- */
+.hl-yellow {
+  background: linear-gradient(180deg, transparent 8%, #f3d47a55 8%, #f3d47a88 90%, transparent 90%);
+}
+.hl-green {
+  background: linear-gradient(180deg, transparent 8%, #9ed6a255 8%, #9ed6a288 90%, transparent 90%);
+}
+.hl-blue {
+  background: linear-gradient(180deg, transparent 8%, #a8cdea55 8%, #a8cdea88 90%, transparent 90%);
+}
+.hl-pink {
+  background: linear-gradient(180deg, transparent 8%, #f0b9cd55 8%, #f0b9cd88 90%, transparent 90%);
+}
+.hl-purple {
+  background: linear-gradient(180deg, transparent 8%, #c9b6e855 8%, #c9b6e888 90%, transparent 90%);
+}
+[data-theme='dark'] .hl-yellow { background: linear-gradient(180deg, transparent 8%, #8a6d1f66 8%, #8a6d1f99 90%, transparent 90%); }
+[data-theme='dark'] .hl-green { background: linear-gradient(180deg, transparent 8%, #2f6a3f66 8%, #2f6a3f99 90%, transparent 90%); }
+[data-theme='dark'] .hl-blue { background: linear-gradient(180deg, transparent 8%, #33566e66 8%, #33566e99 90%, transparent 90%); }
+[data-theme='dark'] .hl-pink { background: linear-gradient(180deg, transparent 8%, #7d425766 8%, #7d425799 90%, transparent 90%); }
+[data-theme='dark'] .hl-purple { background: linear-gradient(180deg, transparent 8%, #56427366 8%, #56427399 90%, transparent 90%); }
